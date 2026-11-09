@@ -72,436 +72,438 @@
     
     <!-- Скрипт эксперимента -->
     <script>
-        console.log('=== EXPERIMENT SCRIPT STARTED ===');
+        // Ждем полной загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== DOM LOADED ===');
+            console.log('=== EXPERIMENT SCRIPT STARTED ===');
 
-        /* =========================
-        КОНФИГУРАЦИЯ
-        ========================= */
-        const CONFIG = {
-            pvt_duration_ms: 180000,  // 3 минуты
-            pvt_min_isi: 0,           // 0 секунд
-            pvt_max_isi: 4000,        // 4 секунды
-            pvt_stimulus_duration: 1000,
-            pvt_fixation_duration: 500,
-            training_trials: 5,
-        };
+            /* =========================
+            КОНФИГУРАЦИЯ
+            ========================= */
+            const CONFIG = {
+                pvt_duration_ms: 180000,  // 3 минуты
+                pvt_min_isi: 0,           // 0 секунд
+                pvt_max_isi: 4000,        // 4 секунды
+                pvt_stimulus_duration: 1000,
+                pvt_fixation_duration: 500,
+                training_trials: 5,
+            };
 
-        /* =========================
-        ИНИЦИАЛИЗАЦИЯ JSPSYCH С DATAPIPE
-        ========================= */
-        const jsPsych = initJsPsych({
-            display_element: "jspsych-target",
-            extensions: [
-                {
-                    type: jsPsychExtensionPipe,
-                    params: {
-                        experiment_id: "ktbMNGnc4ZoC",  // Тот же ID, что и в предыдущем эксперименте
+            /* =========================
+            ИНИЦИАЛИЗАЦИЯ JSPSYCH С DATAPIPE
+            ========================= */
+            const jsPsych = initJsPsych({
+                display_element: "jspsych-target",
+                extensions: [
+                    {
+                        type: jsPsychExtensionPipe,
+                        params: {
+                            experiment_id: "ktbMNGnc4ZoC",
+                        }
                     }
+                ],
+                on_finish: function() {
+                    console.log('=== EXPERIMENT FINISHED ===');
+                    saveDataToPipe();
+                    jsPsych.data.displayData();
+                },
+            });
+
+            console.log('jsPsych initialized:', typeof jsPsych);
+
+            /* =========================
+            KSS ШКАЛА СОНЛИВОСТИ
+            ========================= */
+            const KSS_OPTIONS = [
+                { value: 1, text: "Крайне бодр" },
+                { value: 2, text: "Очень бодр" },
+                { value: 3, text: "Бодр" },
+                { value: 4, text: "Довольно бодр" },
+                { value: 5, text: "Ни бодр, ни сонный" },
+                { value: 6, text: "Некоторые признаки сонливости" },
+                { value: 7, text: "Сонный, но никаких усилий для поддержания бодрствования не требуется" },
+                { value: 8, text: "Сонный, некоторое усилие требуется, чтобы оставаться в сознании" },
+                { value: 9, text: "Очень сонный, требуется большое усилие, чтобы не уснуть, борьба со сном" }
+            ];
+
+            /* =========================
+            ПЕРЕМЕННЫЕ ДЛЯ PVT
+            ========================= */
+            let pvtEndTime = 0;
+            let pvtTrialCount = 0;
+            let trainingTrialCount = 0;
+
+            /* =========================
+            ФУНКЦИЯ СОХРАНЕНИЯ ДАННЫХ ЧЕРЕЗ DATAPIPE
+            ========================= */
+            function saveDataToPipe() {
+                console.log('saveDataToPipe called');
+                try {
+                    const data = jsPsych.data.get().csv();
+                    const filename = `KSS_PVT_${window.PARTICIPANT_ID || 'unknown'}_${Date.now()}.csv`;
+                    
+                    jsPsych.extensions.pipe.save({
+                        filename: filename,
+                        data: data
+                    });
+                    console.log('Data sent to DataPipe:', filename);
+                } catch (err) {
+                    console.error('saveDataToPipe error:', err);
                 }
-            ],
-            on_finish: function() {
-                console.log('=== EXPERIMENT FINISHED ===');
-                saveDataToPipe();
-                jsPsych.data.displayData();
-            },
-        });
+            }
 
-        console.log('jsPsych initialized:', typeof jsPsych);
-
-        /* =========================
-        KSS ШКАЛА СОНЛИВОСТИ
-        ========================= */
-        const KSS_OPTIONS = [
-            { value: 1, text: "Крайне бодр" },
-            { value: 2, text: "Очень бодр" },
-            { value: 3, text: "Бодр" },
-            { value: 4, text: "Довольно бодр" },
-            { value: 5, text: "Ни бодр, ни сонный" },
-            { value: 6, text: "Некоторые признаки сонливости" },
-            { value: 7, text: "Сонный, но никаких усилий для поддержания бодрствования не требуется" },
-            { value: 8, text: "Сонный, некоторое усилие требуется, чтобы оставаться в сознании" },
-            { value: 9, text: "Очень сонный, требуется большое усилие, чтобы не уснуть, борьба со сном" }
-        ];
-
-        /* =========================
-        ПЕРЕМЕННЫЕ ДЛЯ PVT
-        ========================= */
-        let pvtEndTime = 0;
-        let pvtTrialCount = 0;
-        let trainingTrialCount = 0;
-
-        /* =========================
-        ФУНКЦИЯ СОХРАНЕНИЯ ДАННЫХ ЧЕРЕЗ DATAPIPE
-        ========================= */
-        function saveDataToPipe() {
-            console.log('saveDataToPipe called');
-            try {
-                const data = jsPsych.data.get().csv();
-                const filename = `KSS_PVT_${window.PARTICIPANT_ID || 'unknown'}_${Date.now()}.csv`;
-                
-                // Сохраняем через DataPipe в Google-папку
-                jsPsych.extensions.pipe.save({
-                    filename: filename,
-                    data: data
+            /* =========================
+            ФУНКЦИЯ ДЛЯ ВЫБОРА KSS
+            ========================= */
+            window.selectKSSOption = function(element, value) {
+                console.log('KSS selected:', value);
+                document.querySelectorAll('.kss-option').forEach(opt => {
+                    opt.classList.remove('selected');
                 });
-                console.log('Data sent to DataPipe:', filename);
-            } catch (err) {
-                console.error('saveDataToPipe error:', err);
-            }
-        }
+                element.classList.add('selected');
+                window.kssResponse = value;
+                setTimeout(() => {
+                    jsPsych.finishTrial();
+                }, 500);
+            };
 
-        /* =========================
-        ФУНКЦИЯ ДЛЯ ВЫБОРА KSS
-        ========================= */
-        function selectKSSOption(element, value) {
-            console.log('KSS selected:', value);
-            document.querySelectorAll('.kss-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            element.classList.add('selected');
-            window.kssResponse = value;
-            setTimeout(() => {
-                jsPsych.finishTrial();
-            }, 500);
-        }
-
-        /* =========================
-        ДОБАВЛЕНИЕ ТРЕНИРОВОЧНОГО PVT ТРИАЛА
-        ========================= */
-        function addTrainingPVTTrial() {
-            trainingTrialCount++;
-            console.log('Training PVT trial:', trainingTrialCount);
-            
-            if (trainingTrialCount > CONFIG.training_trials) {
-                console.log('Training complete');
-                addMainPVTInstruction();
-                return;
-            }
-            
-            const isi = CONFIG.pvt_min_isi + Math.random() * (CONFIG.pvt_max_isi - CONFIG.pvt_min_isi);
-            
-            jsPsych.addNodeToEndOfTimeline({
-                timeline: [
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"><div class="pvt-fixation">+</div></div>`,
-                        choices: "NO_KEYS",
-                        trial_duration: CONFIG.pvt_fixation_duration,
-                    },
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"></div>`,
-                        choices: "NO_KEYS",
-                        trial_duration: isi,
-                    },
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>`,
-                        choices: [" "],
-                        trial_duration: CONFIG.pvt_stimulus_duration,
-                        data: { 
-                            trial_type: 'pvt_training',
-                            training_trial_number: trainingTrialCount,
-                            participant_id: window.PARTICIPANT_ID,
-                        },
-                        on_finish: function(data) {
-                            if (data.response === null) {
-                                data.reaction_time = null;
-                                data.timeout = 1;
-                            } else {
-                                data.reaction_time = data.rt;
-                                data.timeout = 0;
-                            }
-                        },
-                    },
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: function() {
-                            const last = jsPsych.data.get().last(1).values()[0];
-                            if (last.timeout) {
-                                return `<div class="screen-wrap"><div class="feedback-slow">Не реагировали! Попробуйте быстрее.</div></div>`;
-                            } else {
-                                return `<div class="screen-wrap"><div class="feedback-good">Время реакции: ${last.reaction_time} мс</div></div>`;
-                            }
-                        },
-                        choices: "NO_KEYS",
-                        trial_duration: 1500,
-                        on_finish: function() {
-                            addTrainingPVTTrial();
-                        },
-                    }
-                ]
-            });
-        }
-
-        /* =========================
-        ДОБАВЛЕНИЕ ИНСТРУКЦИИ К ОСНОВНОЙ PVT
-        ========================= */
-        function addMainPVTInstruction() {
-            console.log('Adding main PVT instruction');
-            jsPsych.addNodeToEndOfTimeline({
-                timeline: [
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="screen-wrap">
-                            <div class="instr">
-                                <h1>Основной тест на внимание</h1>
-                                <p>Тренировка завершена!</p>
-                                <p>Теперь начинается основной тест.</p>
-                                <p>На черном экране будут появляться числа.</p>
-                                <p>Как только вы увидите число, нажмите <strong>ПРОБЕЛ</strong> как можно быстрее.</p>
-                                <p>Тест продлится <strong>3 минуты</strong>.</p>
-                                <p>Обратной связи больше не будет.</p>
-                                <p>Старайтесь реагировать быстро и точно.</p>
-                                <div class="small-note">Нажмите любую клавишу, чтобы начать.</div>
-                            </div>
-                        </div>`,
-                        choices: "ALL_KEYS",
-                        on_finish: function() {
-                            startMainPVT();
-                        },
-                    }
-                ]
-            });
-        }
-
-        /* =========================
-        ЗАПУСК ОСНОВНОЙ PVT ЗАДАЧИ
-        ========================= */
-        function startMainPVT() {
-            console.log('Main PVT started');
-            pvtEndTime = Date.now() + CONFIG.pvt_duration_ms;
-            pvtTrialCount = 0;
-            addMainPVTTrial();
-        }
-
-        /* =========================
-        ДОБАВЛЕНИЕ ОСНОВНОГО PVT ТРИАЛА
-        ========================= */
-        function addMainPVTTrial() {
-            const currentTime = Date.now();
-            if (currentTime >= pvtEndTime) {
-                console.log('Main PVT finished');
-                addFinishScreen();
-                return;
-            }
-            
-            const isi = CONFIG.pvt_min_isi + Math.random() * (CONFIG.pvt_max_isi - CONFIG.pvt_min_isi);
-            
-            jsPsych.addNodeToEndOfTimeline({
-                timeline: [
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"></div>`,
-                        choices: "NO_KEYS",
-                        trial_duration: isi,
-                    },
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>`,
-                        choices: [" "],
-                        trial_duration: CONFIG.pvt_stimulus_duration,
-                        data: { 
-                            trial_type: 'pvt_main',
-                            participant_id: window.PARTICIPANT_ID,
-                        },
-                        on_finish: function(data) {
-                            pvtTrialCount++;
-                            if (data.response === null) {
-                                data.reaction_time = null;
-                                data.timeout = 1;
-                            } else {
-                                data.reaction_time = data.rt;
-                                data.timeout = 0;
-                            }
-                            data.trial_number = pvtTrialCount;
-                            addMainPVTTrial();
-                        },
-                    }
-                ]
-            });
-        }
-
-        /* =========================
-        ДОБАВЛЕНИЕ ФИНАЛЬНОГО ЭКРАНА
-        ========================= */
-        function addFinishScreen() {
-            console.log('Adding finish screen');
-            jsPsych.addNodeToEndOfTimeline({
-                timeline: [
-                    {
-                        type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="screen-wrap">
-                            <div class="finish-screen">
-                                <h1>Эксперимент окончен</h1>
-                                <p>Дождитесь выгрузки данных, подождите около 5 секунд и нажмите пробел.</p>
-                            </div>
-                        </div>`,
-                        choices: "ALL_KEYS",
-                    }
-                ]
-            });
-        }
-
-        /* =========================
-        ВВОД ID УЧАСТНИКА
-        ========================= */
-        const idTrial = {
-            type: jsPsychSurveyHtmlForm,
-            html: `<div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:40px;">
-                <h2>Введите ID, который вам сообщил экспериментатор</h2>
-                <input type="text" name="participant_id" required placeholder="id_1" 
-                       style="font-size:24px; padding:10px 20px; border:2px solid #333; border-radius:8px; text-align:center; width:300px;">
-            </div>`,
-            button_label: "Начать",
-            on_finish: function(data) {
-                console.log('ID entered:', data.response.participant_id);
-                window.PARTICIPANT_ID = data.response.participant_id;
+            /* =========================
+            ДОБАВЛЕНИЕ ТРЕНИРОВОЧНОГО PVT ТРИАЛА
+            ========================= */
+            function addTrainingPVTTrial() {
+                trainingTrialCount++;
+                console.log('Training PVT trial:', trainingTrialCount);
                 
-                jsPsych.data.addProperties({
-                    subject_id: window.PARTICIPANT_ID,
-                    experiment_name: "KSS_PVT"
-                });
+                if (trainingTrialCount > CONFIG.training_trials) {
+                    console.log('Training complete');
+                    addMainPVTInstruction();
+                    return;
+                }
                 
-                // Добавляем инструкцию KSS
+                const isi = CONFIG.pvt_min_isi + Math.random() * (CONFIG.pvt_max_isi - CONFIG.pvt_min_isi);
+                
                 jsPsych.addNodeToEndOfTimeline({
                     timeline: [
                         {
                             type: jsPsychHtmlKeyboardResponse,
-                            stimulus: `<div class="screen-wrap">
-                                <div class="instr">
-                                    <h1>Шкала сонливости</h1>
-                                    <p>Сейчас вам будет предложена шкала сонливости.</p>
-                                    <p>Пожалуйста, оцените ваше текущее состояние от 1 до 9.</p>
-                                    <p>1 — вы крайне бодры, 9 — вы очень сонны.</p>
-                                    <div class="small-note">Нажмите любую клавишу, чтобы продолжить.</div>
-                                </div>
-                            </div>`,
-                            choices: "ALL_KEYS"
+                            stimulus: `<div class="pvt-screen"><div class="pvt-fixation">+</div></div>`,
+                            choices: "NO_KEYS",
+                            trial_duration: CONFIG.pvt_fixation_duration,
+                        },
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="pvt-screen"></div>`,
+                            choices: "NO_KEYS",
+                            trial_duration: isi,
+                        },
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>`,
+                            choices: [" "],
+                            trial_duration: CONFIG.pvt_stimulus_duration,
+                            data: { 
+                                trial_type: 'pvt_training',
+                                training_trial_number: trainingTrialCount,
+                                participant_id: window.PARTICIPANT_ID,
+                            },
+                            on_finish: function(data) {
+                                if (data.response === null) {
+                                    data.reaction_time = null;
+                                    data.timeout = 1;
+                                } else {
+                                    data.reaction_time = data.rt;
+                                    data.timeout = 0;
+                                }
+                            },
                         },
                         {
                             type: jsPsychHtmlKeyboardResponse,
                             stimulus: function() {
-                                let html = `<div class="screen-wrap">
-                                    <div class="kss-container">
-                                        <h1 class="kss-title">Оцените вашу текущую сонливость</h1>
-                                        <p class="kss-description">Выберите пункт, который лучше всего описывает ваше текущее состояние:</p>
-                                        <div class="kss-options">`;
-                                
-                                KSS_OPTIONS.forEach(option => {
-                                    html += `<div class="kss-option" data-value="${option.value}" onclick="selectKSSOption(this, ${option.value})">
-                                        <div class="kss-number">${option.value}</div>
-                                        <div class="kss-text">${option.text}</div>
-                                    </div>`;
-                                });
-                                
-                                html += `</div></div></div>`;
-                                return html;
+                                const last = jsPsych.data.get().last(1).values()[0];
+                                if (last.timeout) {
+                                    return `<div class="screen-wrap"><div class="feedback-slow">Не реагировали! Попробуйте быстрее.</div></div>`;
+                                } else {
+                                    return `<div class="screen-wrap"><div class="feedback-good">Время реакции: ${last.reaction_time} мс</div></div>`;
+                                }
                             },
                             choices: "NO_KEYS",
-                            trial_duration: 300000,
-                            on_finish: function(data) {
-                                if (!window.kssResponse) {
-                                    alert("Пожалуйста, выберите вариант!");
-                                    jsPsych.finishTrial();
-                                    return;
-                                }
-                                data.kss_score = window.kssResponse;
-                                console.log('KSS Score:', window.kssResponse);
-                            }
-                        },
-                        {
-                            type: jsPsychHtmlKeyboardResponse,
-                            stimulus: `<div class="screen-wrap">
-                                <div class="instr">
-                                    <h1>Тренировка: Тест на внимание</h1>
-                                    <p>Сейчас будет тренировка теста на внимание.</p>
-                                    <p>На черном экране будет появляться число.</p>
-                                    <p>Как только вы увидите число, нажмите <strong>ПРОБЕЛ</strong> как можно быстрее.</p>
-                                    <p>Тренировка состоит из <strong>5 проб</strong>.</p>
-                                    <p>После каждого ответа вы увидите обратную связь.</p>
-                                    <div class="small-note">Нажмите любую клавишу, чтобы начать тренировку.</div>
-                                </div>
-                            </div>`,
-                            choices: "ALL_KEYS",
+                            trial_duration: 1500,
                             on_finish: function() {
-                                trainingTrialCount = 0;
                                 addTrainingPVTTrial();
                             },
                         }
                     ]
                 });
             }
-        };
 
-        /* =========================
-        TIMELINE
-        ========================= */
-        const timeline = [idTrial];
-
-        console.log('Timeline created:', timeline);
-
-        /* =========================
-        СТАРТ ЭКСПЕРИМЕНТА
-        ========================= */
-        function startExperiment() {
-            console.log('startExperiment called');
-            document.getElementById('fullscreen-start').style.display = 'none';
-            try {
-                jsPsych.run(timeline);
-                console.log('jsPsych.run completed');
-            } catch (err) {
-                console.error('jsPsych.run error:', err);
-            }
-        }
-
-        function enterFullscreen() {
-            console.log('enterFullscreen called');
-            const el = document.documentElement;
-            const requestFullscreen = el.requestFullscreen || 
-                                      el.webkitRequestFullscreen || 
-                                      el.msRequestFullscreen;
-            
-            if (requestFullscreen) {
-                requestFullscreen.call(el).then(() => {
-                    console.log('Fullscreen entered');
-                    startExperiment();
-                }).catch((err) => {
-                    console.warn('Fullscreen request failed:', err);
-                    startExperiment();
+            /* =========================
+            ДОБАВЛЕНИЕ ИНСТРУКЦИИ К ОСНОВНОЙ PVT
+            ========================= */
+            function addMainPVTInstruction() {
+                console.log('Adding main PVT instruction');
+                jsPsych.addNodeToEndOfTimeline({
+                    timeline: [
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="screen-wrap">
+                                <div class="instr">
+                                    <h1>Основной тест на внимание</h1>
+                                    <p>Тренировка завершена!</p>
+                                    <p>Теперь начинается основной тест.</p>
+                                    <p>На черном экране будут появляться числа.</p>
+                                    <p>Как только вы увидите число, нажмите <strong>ПРОБЕЛ</strong> как можно быстрее.</p>
+                                    <p>Тест продлится <strong>3 минуты</strong>.</p>
+                                    <p>Обратной связи больше не будет.</p>
+                                    <p>Старайтесь реагировать быстро и точно.</p>
+                                    <div class="small-note">Нажмите любую клавишу, чтобы начать.</div>
+                                </div>
+                            </div>`,
+                            choices: "ALL_KEYS",
+                            on_finish: function() {
+                                startMainPVT();
+                            },
+                        }
+                    ]
                 });
-            } else {
-                startExperiment();
             }
-        }
 
-        /* =========================
-        ОБРАБОТЧИКИ СОБЫТИЙ
-        ========================= */
-        const startBtn = document.getElementById('start-fullscreen-btn');
-        console.log('Start button found:', startBtn);
-        
-        if (startBtn) {
-            startBtn.addEventListener('click', function() {
-                console.log('Button clicked');
-                enterFullscreen();
-            });
-            console.log('Button handler attached');
-        } else {
-            console.error('Start button not found!');
-        }
+            /* =========================
+            ЗАПУСК ОСНОВНОЙ PVT ЗАДАЧИ
+            ========================= */
+            function startMainPVT() {
+                console.log('Main PVT started');
+                pvtEndTime = Date.now() + CONFIG.pvt_duration_ms;
+                pvtTrialCount = 0;
+                addMainPVTTrial();
+            }
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                const startScreen = document.getElementById('fullscreen-start');
-                if (startScreen && startScreen.style.display !== 'none') {
-                    console.log('Key pressed to start');
-                    enterFullscreen();
+            /* =========================
+            ДОБАВЛЕНИЕ ОСНОВНОГО PVT ТРИАЛА
+            ========================= */
+            function addMainPVTTrial() {
+                const currentTime = Date.now();
+                if (currentTime >= pvtEndTime) {
+                    console.log('Main PVT finished');
+                    addFinishScreen();
+                    return;
+                }
+                
+                const isi = CONFIG.pvt_min_isi + Math.random() * (CONFIG.pvt_max_isi - CONFIG.pvt_min_isi);
+                
+                jsPsych.addNodeToEndOfTimeline({
+                    timeline: [
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="pvt-screen"></div>`,
+                            choices: "NO_KEYS",
+                            trial_duration: isi,
+                        },
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>`,
+                            choices: [" "],
+                            trial_duration: CONFIG.pvt_stimulus_duration,
+                            data: { 
+                                trial_type: 'pvt_main',
+                                participant_id: window.PARTICIPANT_ID,
+                            },
+                            on_finish: function(data) {
+                                pvtTrialCount++;
+                                if (data.response === null) {
+                                    data.reaction_time = null;
+                                    data.timeout = 1;
+                                } else {
+                                    data.reaction_time = data.rt;
+                                    data.timeout = 0;
+                                }
+                                data.trial_number = pvtTrialCount;
+                                addMainPVTTrial();
+                            },
+                        }
+                    ]
+                });
+            }
+
+            /* =========================
+            ДОБАВЛЕНИЕ ФИНАЛЬНОГО ЭКРАНА
+            ========================= */
+            function addFinishScreen() {
+                console.log('Adding finish screen');
+                jsPsych.addNodeToEndOfTimeline({
+                    timeline: [
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: `<div class="screen-wrap">
+                                <div class="finish-screen">
+                                    <h1>Эксперимент окончен</h1>
+                                    <p>Дождитесь выгрузки данных.</p>
+                                </div>
+                            </div>`,
+                            choices: "ALL_KEYS",
+                        }
+                    ]
+                });
+            }
+
+            /* =========================
+            ВВОД ID УЧАСТНИКА
+            ========================= */
+            const idTrial = {
+                type: jsPsychSurveyHtmlForm,
+                html: `<div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:40px;">
+                    <h2>Введите ID, который вам сообщил экспериментатор</h2>
+                    <input type="text" name="participant_id" required placeholder="id_1" 
+                           style="font-size:24px; padding:10px 20px; border:2px solid #333; border-radius:8px; text-align:center; width:300px;">
+                </div>`,
+                button_label: "Начать",
+                on_finish: function(data) {
+                    console.log('ID entered:', data.response.participant_id);
+                    window.PARTICIPANT_ID = data.response.participant_id;
+                    
+                    jsPsych.data.addProperties({
+                        subject_id: window.PARTICIPANT_ID,
+                        experiment_name: "KSS_PVT"
+                    });
+                    
+                    jsPsych.addNodeToEndOfTimeline({
+                        timeline: [
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: `<div class="screen-wrap">
+                                    <div class="instr">
+                                        <h1>Шкала сонливости</h1>
+                                        <p>Сейчас вам будет предложена шкала сонливости.</p>
+                                        <p>Пожалуйста, оцените ваше текущее состояние от 1 до 9.</p>
+                                        <p>1 — вы крайне бодры, 9 — вы очень сонны.</p>
+                                        <div class="small-note">Нажмите любую клавишу, чтобы продолжить.</div>
+                                    </div>
+                                </div>`,
+                                choices: "ALL_KEYS"
+                            },
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: function() {
+                                    let html = `<div class="screen-wrap">
+                                        <div class="kss-container">
+                                            <h1 class="kss-title">Оцените вашу текущую сонливость</h1>
+                                            <p class="kss-description">Выберите пункт, который лучше всего описывает ваше текущее состояние:</p>
+                                            <div class="kss-options">`;
+                                    
+                                    KSS_OPTIONS.forEach(option => {
+                                        html += `<div class="kss-option" data-value="${option.value}" onclick="selectKSSOption(this, ${option.value})">
+                                            <div class="kss-number">${option.value}</div>
+                                            <div class="kss-text">${option.text}</div>
+                                        </div>`;
+                                    });
+                                    
+                                    html += `</div></div></div>`;
+                                    return html;
+                                },
+                                choices: "NO_KEYS",
+                                trial_duration: 300000,
+                                on_finish: function(data) {
+                                    if (!window.kssResponse) {
+                                        alert("Пожалуйста, выберите вариант!");
+                                        jsPsych.finishTrial();
+                                        return;
+                                    }
+                                    data.kss_score = window.kssResponse;
+                                    console.log('KSS Score:', window.kssResponse);
+                                }
+                            },
+                            {
+                                type: jsPsychHtmlKeyboardResponse,
+                                stimulus: `<div class="screen-wrap">
+                                    <div class="instr">
+                                        <h1>Тренировка: Тест на внимание</h1>
+                                        <p>Сейчас будет тренировка теста на внимание.</p>
+                                        <p>На черном экране будет появляться число.</p>
+                                        <p>Как только вы увидите число, нажмите <strong>ПРОБЕЛ</strong> как можно быстрее.</p>
+                                        <p>Тренировка состоит из <strong>5 проб</strong>.</p>
+                                        <p>После каждого ответа вы увидите обратную связь.</p>
+                                        <div class="small-note">Нажмите любую клавишу, чтобы начать тренировку.</div>
+                                    </div>
+                                </div>`,
+                                choices: "ALL_KEYS",
+                                on_finish: function() {
+                                    trainingTrialCount = 0;
+                                    addTrainingPVTTrial();
+                                },
+                            }
+                        ]
+                    });
+                }
+            };
+
+            /* =========================
+            TIMELINE
+            ========================= */
+            const timeline = [idTrial];
+
+            console.log('Timeline created:', timeline);
+
+            /* =========================
+            СТАРТ ЭКСПЕРИМЕНТА
+            ========================= */
+            function startExperiment() {
+                console.log('startExperiment called');
+                document.getElementById('fullscreen-start').style.display = 'none';
+                try {
+                    jsPsych.run(timeline);
+                    console.log('jsPsych.run completed');
+                } catch (err) {
+                    console.error('jsPsych.run error:', err);
                 }
             }
-        });
 
-        console.log('=== EXPERIMENT SCRIPT COMPLETE ===');
+            function enterFullscreen() {
+                console.log('enterFullscreen called');
+                const el = document.documentElement;
+                const requestFullscreen = el.requestFullscreen || 
+                                          el.webkitRequestFullscreen || 
+                                          el.msRequestFullscreen;
+                
+                if (requestFullscreen) {
+                    requestFullscreen.call(el).then(() => {
+                        console.log('Fullscreen entered');
+                        startExperiment();
+                    }).catch((err) => {
+                        console.warn('Fullscreen request failed:', err);
+                        startExperiment();
+                    });
+                } else {
+                    startExperiment();
+                }
+            }
+
+            /* =========================
+            ОБРАБОТЧИКИ СОБЫТИЙ
+            ========================= */
+            const startBtn = document.getElementById('start-fullscreen-btn');
+            console.log('Start button found:', startBtn);
+            
+            if (startBtn) {
+                startBtn.addEventListener('click', function() {
+                    console.log('Button clicked');
+                    enterFullscreen();
+                });
+                console.log('Button handler attached');
+            } else {
+                console.error('Start button not found!');
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    const startScreen = document.getElementById('fullscreen-start');
+                    if (startScreen && startScreen.style.display !== 'none') {
+                        console.log('Key pressed to start');
+                        enterFullscreen();
+                    }
+                }
+            });
+
+            console.log('=== EXPERIMENT SCRIPT COMPLETE ===');
+        });
     </script>
 </body>
 </html>
