@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3/dist/index.browser.js"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3/dist/index.browser.js"></script>
     
-    <!-- DataPipe Extension (ПРАВИЛЬНАЯ ВЕРСИЯ из твоего рабочего эксперимента) -->
+    <!-- DataPipe Extension (ПРОВЕРЕННАЯ ВЕРСИЯ из твоего рабочего эксперимента) -->
     <script src="https://unpkg.com/@jspsych/extension-pipe@0.2.0"></script>
 
     <style>
@@ -73,7 +73,7 @@
     <!-- Скрипт эксперимента -->
     <script>
         /* =========================
-        ИНИЦИАЛИЗАЦИЯ JSPSYCH С DATAPIPE (как в рабочем эксперименте)
+        ИНИЦИАЛИЗАЦИЯ JSPSYCH С DATAPIPE
         ========================= */
         const jsPsych = initJsPsych({
             display_element: "jspsych-target",
@@ -87,7 +87,6 @@
             ],
             on_finish: function () {
                 // Резервное локальное сохранение с требуемым префиксом KSS_PVT_
-                // (DataPipe параллельно отправит данные в Google-папку)
                 try {
                     const data = jsPsych.data.get().csv();
                     const filename = `KSS_PVT_${window.PARTICIPANT_ID || 'unknown'}_${Date.now()}.csv`;
@@ -101,7 +100,6 @@
                 } catch (e) {
                     console.error('Ошибка локального сохранения:', e);
                 }
-                
                 jsPsych.data.displayData();
             },
         });
@@ -121,7 +119,6 @@
             { value: 9, text: "Очень сонный, требуется большое усилие, чтобы не уснуть, борьба со сном" }
         ];
 
-        // Глобальная функция для клика по KSS (чтобы работала из HTML-строки)
         window.selectKSSOption = function(element, value) {
             document.querySelectorAll('.kss-option').forEach(opt => opt.classList.remove('selected'));
             element.classList.add('selected');
@@ -130,7 +127,7 @@
         };
 
         /* =========================
-        ВВОД ID УЧАСТНИКА (как в рабочем эксперименте)
+        ВВОД ID УЧАСТНИКА
         ========================= */
         const idTrial = {
             type: jsPsychSurveyHtmlForm,
@@ -160,7 +157,7 @@
                     experiment_name: "KSS_PVT"
                 });
 
-                // === ДИНАМИЧЕСКОЕ ДОБАВЛЕНИЕ TIMELINE ПОСЛЕ ВВОДА ID ===
+                // === ДИНАМИЧЕСКОЕ ДОБАВЛЕНИЕ TIMELINE ===
                 jsPsych.addNodeToEndOfTimeline({
                     timeline: [
                         // 1. Инструкция KSS
@@ -219,12 +216,12 @@
                         {
                             timeline: [
                                 { type: jsPsychHtmlKeyboardResponse, stimulus: '<div class="pvt-screen"><div class="pvt-fixation">+</div></div>', choices: "NO_KEYS", trial_duration: 500 },
-                                { type: jsPsychHtmlKeyboardResponse, stimulus: '<div class="pvt-screen"></div>', choices: "NO_KEYS", trial_duration: () => Math.random() * 4000 }, // 0-4 сек
+                                { type: jsPsychHtmlKeyboardResponse, stimulus: '<div class="pvt-screen"></div>', choices: "NO_KEYS", trial_duration: () => Math.floor(Math.random() * 4000) + 500 },
                                 {
                                     type: jsPsychHtmlKeyboardResponse,
                                     stimulus: '<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>',
                                     choices: [" "],
-                                    trial_duration: 1000,
+                                    trial_duration: 1500,
                                     data: { phase: 'training' },
                                     on_finish: (data) => {
                                         data.timeout = data.response === null ? 1 : 0;
@@ -256,51 +253,95 @@
                                 <p>Тренировка завершена!</p>
                                 <p>На черном экране будут появляться числа.</p>
                                 <p>Нажимайте <strong>ПРОБЕЛ</strong> как можно быстрее при появлении.</p>
-                                <p>Тест продлится <strong>3 минуты</strong>.</p>
+                                <p>Тест продлится <strong>ровно 3 минуты</strong>.</p>
                                 <p>Обратной связи больше не будет.</p>
                                 <div class="small-note">Нажмите любую клавишу, чтобы начать.</div>
                             </div></div>`,
-                            choices: "ALL_KEYS"
-                        },
-                        // 6. Основной цикл PVT (3 минуты)
-                        {
-                            timeline: [
-                                { type: jsPsychHtmlKeyboardResponse, stimulus: '<div class="pvt-screen"></div>', choices: "NO_KEYS", trial_duration: () => Math.random() * 4000 }, // 0-4 сек
-                                {
-                                    type: jsPsychHtmlKeyboardResponse,
-                                    stimulus: '<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>',
-                                    choices: [" "],
-                                    trial_duration: 1000,
-                                    data: { phase: 'main' },
-                                    on_finish: (data) => {
-                                        data.timeout = data.response === null ? 1 : 0;
-                                        data.rt = data.timeout ? null : data.rt;
-                                    }
-                                }
-                            ],
-                            on_timeline_start: () => {
-                                window.pvtStartTime = Date.now();
-                            },
-                            loop_function: () => {
-                                // Продолжать, пока не прошло 3 минуты (180 000 мс)
-                                return (Date.now() - window.pvtStartTime) < 180000;
+                            choices: "ALL_KEYS",
+                            on_start: () => {
+                                // ИНИЦИАЛИЗАЦИЯ ТАЙМЕРА PVT ПЕРЕД СТАРТОМ
+                                window.pvtEndTime = Date.now() + 180000; // 3 минуты = 180 000 мс
+                                window.pvtTrialCount = 0;
+                                console.log('PVT запущен. Окончание через 3 минуты.');
                             }
                         },
-                        // 7. Финальный экран
+                        // 6. Рекурсивный запуск основной задачи PVT (гарантирует точное время)
                         {
                             type: jsPsychHtmlKeyboardResponse,
-                            stimulus: `<div class="screen-wrap">
-                                <div class="finish-screen">
-                                    <h1>Эксперимент окончен</h1>
-                                    <p>Дождитесь выгрузки данных.</p>
-                                </div>
-                            </div>`,
-                            choices: "ALL_KEYS"
+                            stimulus: '<div class="pvt-screen"><div class="pvt-fixation">Приготовьтесь...</div></div>',
+                            choices: "NO_KEYS",
+                            trial_duration: 1000,
+                            on_finish: () => {
+                                addMainPVTTrial();
+                            }
                         }
                     ]
                 });
             }
         };
+
+        /* =========================
+        РЕКУРСИВНАЯ ФУНКЦИЯ ДЛЯ PVT (ГАРАНТИЯ 3 МИНУТ)
+        ========================= */
+        function addMainPVTTrial() {
+            // Проверяем время ПЕРЕД добавлением нового триала
+            if (Date.now() >= window.pvtEndTime) {
+                console.log('PVT: Время вышло (3 минуты). Завершаем задачу.');
+                addFinishScreen();
+                return;
+            }
+            
+            // Интервал 500-4500 мс (избегаем 0 мс, который вызывает глитчи в браузере)
+            const isi = Math.floor(Math.random() * 4000) + 500; 
+            
+            jsPsych.addNodeToEndOfTimeline({
+                timeline: [
+                    {
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: '<div class="pvt-screen"></div>',
+                        choices: "NO_KEYS",
+                        trial_duration: isi,
+                        data: { phase: 'main_isi' }
+                    },
+                    {
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: '<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>',
+                        choices: [" "],
+                        trial_duration: 1500, // 1.5 секунды на реакцию (стандарт PVT)
+                        data: { phase: 'main_stim' },
+                        on_finish: function(data) {
+                            window.pvtTrialCount++;
+                            data.trial_number = window.pvtTrialCount;
+                            data.timeout = data.response === null ? 1 : 0;
+                            data.rt = data.timeout ? null : data.rt;
+                            
+                            // Рекурсивно добавляем следующий триал
+                            addMainPVTTrial();
+                        }
+                    }
+                ]
+            });
+        }
+
+        /* =========================
+        ФИНАЛЬНЫЙ ЭКРАН
+        ========================= */
+        function addFinishScreen() {
+            jsPsych.addNodeToEndOfTimeline({
+                timeline: [
+                    {
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: `<div class="screen-wrap">
+                            <div class="finish-screen">
+                                <h1>Эксперимент окончен</h1>
+                                <p>Дождитесь выгрузки данных.</p>
+                            </div>
+                        </div>`,
+                        choices: "ALL_KEYS"
+                    }
+                ]
+            });
+        }
 
         /* =========================
         TIMELINE И ЗАПУСК
@@ -328,7 +369,6 @@
             }
         }
 
-        // Обработчики кнопок
         document.getElementById('start-fullscreen-btn').addEventListener('click', enterFullscreen);
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
