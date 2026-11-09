@@ -11,263 +11,46 @@
     <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; color: #333; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-        }
+        .fullscreen-start { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .start-content { text-align: center; background: white; padding: 60px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); max-width: 600px; }
+        .start-content h1 { color: #667eea; margin-bottom: 20px; font-size: 2em; }
+        .start-content p { margin-bottom: 20px; font-size: 1.1em; line-height: 1.6; }
+        .start-button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 10px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin: 20px 0; }
+        .start-button:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .small-text { font-size: 0.9em; color: #666; }
 
-        .fullscreen-start {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+        #jspsych-target { min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .jspsych-display-element { display: flex; justify-content: center; align-items: center; min-height: 100vh; width: 100%; }
 
-        .start-content {
-            text-align: center;
-            background: white;
-            padding: 60px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-        }
+        .screen-wrap { display: flex; justify-content: center; align-items: center; min-height: 100vh; width: 100%; padding: 40px; }
+        .instr { max-width: 800px; text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); }
+        .instr h1, .instr h2 { color: #667eea; margin-bottom: 20px; }
+        .instr p { font-size: 1.2em; line-height: 1.8; margin-bottom: 15px; }
+        .small-note { margin-top: 30px; font-size: 0.9em; color: #666; font-style: italic; }
 
-        .start-content h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
+        .kss-container { max-width: 900px; width: 100%; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); }
+        .kss-title { text-align: center; color: #667eea; font-size: 2em; margin-bottom: 30px; }
+        .kss-description { text-align: center; font-size: 1.1em; margin-bottom: 40px; color: #555; }
+        .kss-options { display: flex; flex-direction: column; gap: 15px; }
+        .kss-option { display: flex; align-items: center; padding: 20px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.3s; background: #fafafa; }
+        .kss-option:hover { border-color: #667eea; background: #f0f4ff; transform: translateX(5px); }
+        .kss-option.selected { border-color: #667eea; background: #e8eeff; }
+        .kss-number { font-size: 2em; font-weight: bold; color: #667eea; min-width: 60px; text-align: center; }
+        .kss-text { font-size: 1.1em; line-height: 1.5; flex: 1; }
 
-        .start-content p {
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            line-height: 1.6;
-        }
+        .pvt-screen { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: #000; color: #fff; position: relative; }
+        .pvt-stimulus { font-size: 8em; font-weight: bold; color: #fff; font-family: 'Courier New', monospace; }
+        .pvt-fixation { font-size: 3em; color: #fff; }
 
-        .start-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin: 20px 0;
-        }
+        .feedback-good { font-size: 2em; color: #4CAF50; font-weight: bold; }
+        .feedback-slow { font-size: 2em; color: #FF9800; font-weight: bold; }
 
-        .start-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .small-text {
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        #jspsych-target {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .jspsych-display-element {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            width: 100%;
-        }
-
-        .screen-wrap {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            width: 100%;
-            padding: 40px;
-        }
-
-        .instr {
-            max-width: 800px;
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .instr h1, .instr h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-        }
-
-        .instr p {
-            font-size: 1.2em;
-            line-height: 1.8;
-            margin-bottom: 15px;
-        }
-
-        .small-note {
-            margin-top: 30px;
-            font-size: 0.9em;
-            color: #666;
-            font-style: italic;
-        }
-
-        .kss-container {
-            max-width: 900px;
-            width: 100%;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .kss-title {
-            text-align: center;
-            color: #667eea;
-            font-size: 2em;
-            margin-bottom: 30px;
-        }
-
-        .kss-description {
-            text-align: center;
-            font-size: 1.1em;
-            margin-bottom: 40px;
-            color: #555;
-        }
-
-        .kss-options {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .kss-option {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #fafafa;
-        }
-
-        .kss-option:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-            transform: translateX(5px);
-        }
-
-        .kss-option.selected {
-            border-color: #667eea;
-            background: #e8eeff;
-        }
-
-        .kss-number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-            min-width: 60px;
-            text-align: center;
-        }
-
-        .kss-text {
-            font-size: 1.1em;
-            line-height: 1.5;
-            flex: 1;
-        }
-
-        .pvt-screen {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000;
-            color: #fff;
-            position: relative;
-        }
-
-        .pvt-stimulus {
-            font-size: 8em;
-            font-weight: bold;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-        }
-
-        .pvt-fixation {
-            font-size: 3em;
-            color: #fff;
-        }
-
-        .pvt-timer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5em;
-            color: #666;
-            font-family: 'Courier New', monospace;
-        }
-
-        .feedback-good {
-            font-size: 2em;
-            color: #4CAF50;
-            font-weight: bold;
-        }
-
-        .feedback-slow {
-            font-size: 2em;
-            color: #FF9800;
-            font-weight: bold;
-        }
-
-        .finish-screen {
-            text-align: center;
-            background: white;
-            padding: 60px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 700px;
-        }
-
-        .finish-screen h1 {
-            color: #667eea;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-        }
-
-        .finish-screen p {
-            font-size: 1.3em;
-            line-height: 1.8;
-            margin-bottom: 20px;
-        }
-
-        .data-info {
-            background: #f0f4ff;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 30px 0;
-            font-size: 0.9em;
-            text-align: left;
-        }
-
-        .data-info h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
+        .finish-screen { text-align: center; background: white; padding: 60px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); max-width: 700px; }
+        .finish-screen h1 { color: #667eea; margin-bottom: 30px; font-size: 2.5em; }
+        .finish-screen p { font-size: 1.3em; line-height: 1.8; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -334,7 +117,6 @@
         ========================= */
         let pvtEndTime = 0;
         let pvtTrialCount = 0;
-        let pvtTimerInterval = null;
         let trainingTrialCount = 0;
 
         /* =========================
@@ -354,32 +136,6 @@
                 console.log('Data saved:', filename);
             } catch (err) {
                 console.error('saveData error:', err);
-            }
-        }
-
-        /* =========================
-        ФУНКЦИИ ДЛЯ ТАЙМЕРА PVT
-        ========================= */
-        function getTimerText() {
-            const remaining = Math.max(0, pvtEndTime - Date.now());
-            const minutes = Math.floor(remaining / 60000);
-            const seconds = Math.floor((remaining % 60000) / 1000);
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function startPVTTimer() {
-            pvtTimerInterval = setInterval(() => {
-                const timerElements = document.querySelectorAll('.pvt-timer');
-                timerElements.forEach(el => {
-                    el.textContent = getTimerText();
-                });
-            }, 1000);
-        }
-
-        function stopPVTTimer() {
-            if (pvtTimerInterval) {
-                clearInterval(pvtTimerInterval);
-                pvtTimerInterval = null;
             }
         }
 
@@ -505,7 +261,6 @@
             console.log('Main PVT started');
             pvtEndTime = Date.now() + CONFIG.pvt_duration_ms;
             pvtTrialCount = 0;
-            startPVTTimer();
             addMainPVTTrial();
         }
 
@@ -516,7 +271,6 @@
             const currentTime = Date.now();
             if (currentTime >= pvtEndTime) {
                 console.log('Main PVT finished');
-                stopPVTTimer();
                 addFinishScreen();
                 return;
             }
@@ -527,13 +281,13 @@
                 timeline: [
                     {
                         type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"><div class="pvt-timer">${getTimerText()}</div></div>`,
+                        stimulus: `<div class="pvt-screen"></div>`,
                         choices: "NO_KEYS",
                         trial_duration: isi,
                     },
                     {
                         type: jsPsychHtmlKeyboardResponse,
-                        stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div><div class="pvt-timer">${getTimerText()}</div></div>`,
+                        stimulus: `<div class="pvt-screen"><div class="pvt-stimulus">0</div></div>`,
                         choices: [" "],
                         trial_duration: CONFIG.pvt_stimulus_duration,
                         data: { 
@@ -568,16 +322,8 @@
                         type: jsPsychHtmlKeyboardResponse,
                         stimulus: `<div class="screen-wrap">
                             <div class="finish-screen">
-                                <h1>Спасибо!</h1>
-                                <p>Эксперимент завершён.</p>
-                                <p>Ваши данные были сохранены.</p>
-                                <div class="data-info">
-                                    <h3>Информация о данных:</h3>
-                                    <p><strong>ID участника:</strong> ${window.PARTICIPANT_ID || 'N/A'}</p>
-                                    <p><strong>Название эксперимента:</strong> KSS_PVT</p>
-                                    <p><strong>Файл сохранен с префиксом:</strong> KSS_PVT_</p>
-                                </div>
-                                <div class="small-note">Нажмите любую клавишу, чтобы увидеть таблицу данных.</div>
+                                <h1>Эксперимент окончен</h1>
+                                <p>Дождитесь выгрузки данных.</p>
                             </div>
                         </div>`,
                         choices: "ALL_KEYS",
